@@ -12,6 +12,7 @@ type ServeMux struct {
 	baseRoute     *Route
 	hostRoutes    map[string]*Route
 	executionPool *executionPool
+	skipClean     bool
 }
 
 // ctxKey is the key type used for path parameters in the request context
@@ -65,11 +66,17 @@ func NewServeMux() *ServeMux {
 	return s
 }
 
+// SkipClean defines whether to remove the ending slash and redirect
+func (s *ServeMux) SkipClean(value bool) *ServeMux {
+	s.skipClean = value
+	return s
+}
+
 func (s *ServeMux) getAll(r *http.Request, ex *routeExecution) {
 	path := r.URL.EscapedPath()
 
 	// Check for redirect
-	if path != "/" && strings.HasSuffix(path, "/") {
+	if !s.skipClean && path != "/" && strings.HasSuffix(path, "/") {
 		r.URL.Path = strings.TrimRight(path, "/")
 		ex.handler = http.RedirectHandler(r.URL.RequestURI(), http.StatusPermanentRedirect)
 		ex.pattern = r.URL.EscapedPath()
